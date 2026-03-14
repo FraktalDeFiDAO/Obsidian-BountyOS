@@ -1,0 +1,45 @@
+repos:
+  # Rust
+  - repo: https://github.com/rust-lang/rustfmt
+    rev: stable
+    hooks:
+      - id: rustfmt
+        args: ["--edition", "2021"]
+
+  - repo: https://github.com/rust-lang/rust-clippy
+    rev: stable
+    hooks:
+      - id: clippy
+        args: ["--", "-D", "warnings"]
+
+  # JavaScript/TypeScript
+  - repo: https://github.com/prettier/prettier
+    rev: stable
+    hooks:
+      - id: prettier
+
+  - repo: https://github.com/eslint/eslint
+    rev: stable
+    hooks:
+      - id: eslint
+        files: \.[jt]sx?$/
+        types: [file]
+
+  # General
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: stable
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=5000']
+      - id: check-merge-conflict
+
+  # Secrets
+  - repo: https://github.com/trufflesecurity/trufflehog
+    rev: stable
+    hooks:
+      - id: trufflehog
+        args: ["--no-update"]

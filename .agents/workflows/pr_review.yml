@@ -1,0 +1,41 @@
+name: PR Review Workflow
+
+trigger:
+  - pull_request
+  - pull_request_opened
+  - pull_request_updated
+
+stages:
+  - lint
+  - test
+  - security
+  - quality
+
+lint:
+  tools:
+    - cargo fmt --check
+    - cargo clippy
+    - npm run lint
+
+test:
+  tools:
+    - cargo test
+    - npm run test
+
+security:
+  tools:
+    - cargo audit
+    - npm audit
+    - trivy fs
+    - trufflehog
+
+quality:
+  checks:
+    - coverage >= 80%
+    - no critical_vulnerabilities
+    - no secrets_found
+
+notification:
+  channels:
+    - pr_comment
+    - discord_on_failure

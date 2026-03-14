@@ -1,0 +1,120 @@
+orchestration:
+  routing:
+    by_path:
+      "src/rust/**": rust-backend-agent
+      "src/cli/**": rust-backend-agent
+      "src/api/**": rust-backend-agent
+      "src/adapters/**": platform-adapter-agent
+      "src/db/**": rust-backend-agent
+      "src/domain/**": rust-backend-agent
+      "frontend/**": vue-frontend-agent
+      ".github/**": devops-agent
+      "docs/**": documentation-agent
+      
+  skills:
+    auto_discovery: true
+    enabled:
+      - rust_backend
+      - rust_security_audit
+      - js_security_audit
+      - docker_security_audit
+      - secrets_scanning
+      - license_compliance
+      - vue_frontend
+      - platform_adapter
+      - testing
+      - devops
+      
+  workflows:
+    on_pr_opened: pr_review
+    on_pr_synchronized: pr_audit
+    on_schedule: daily_audit
+    on_tag: release_deploy
+    
+  agents:
+    default: general_agent
+    specialized:
+      - rust-backend-agent
+      - vue-frontend-agent
+      - platform-adapter-agent
+      - devops-agent
+      - security-audit-agent
+
+audit:
+  severity_levels:
+    critical:
+      action: block
+      notify: true
+    high:
+      action: block
+      notify: true
+    medium:
+      action: warn
+      notify: true
+    low:
+      action: pass
+      notify: false
+      
+  auto_fix:
+    enabled: true
+    tools:
+      - npm audit fix
+      - cargo update
+      - pip audit --fix
+      
+  notifications:
+    channels:
+      - discord
+      - telegram
+      - email
+    on_failure: true
+    on_schedule: true
+    on_success: false
+    
+  schedule:
+    daily_audit_time: "0 0 * * *"
+    weekly_report_day: "monday"
+
+git:
+  branch_strategy: gitflow
+  main_branch: main
+  develop_branch: develop
+  feature_prefix: feature/
+  bugfix_prefix: bugfix/
+  hotfix_prefix: hotfix/
+  release_prefix: release/
+  
+  pr_requirements:
+    min_approvals: 1
+    require_reviews: true
+    require_checks: true
+    
+  commit:
+    conventional: true
+    types:
+      - feat
+      - fix
+      - docs
+      - style
+      - refactor
+      - test
+      - chore
+      - perf
+      - ci
+
+development:
+  pre_commit:
+    enabled: true
+    auto_install: true
+    
+  testing:
+    coverage_threshold: 80
+    run_on_pr: true
+    
+  linting:
+    strict_mode: true
+    
+  notifications:
+    pr_merged: true
+    pr_closed: true
+    build_failed: true

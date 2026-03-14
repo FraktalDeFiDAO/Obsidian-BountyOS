@@ -1,0 +1,291 @@
+name: Security Audits
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 0 * * *'  # Daily at midnight
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # ============== RUST AUDITS ==============
+  rust-audit:
+    name: Rust Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run cargo-audit
+        id: audit
+        run: |
+          cargo audit --json | tee audit-rust.json
+        continue-on-error: true
+
+      - name: Upload audit results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rust-audit-results
+          path: audit-rust.json
+          retention-days: 30
+
+      - name: Check for vulnerabilities
+        if: always()
+        run: |
+          if grep -q '"vulnerabilities"' audit-rust.json; then
+            echo "Vulnerabilities found!"
+            exit 1
+          fi
+
+  rust-license:
+    name: Rust License Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: cargo-deny
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny
+
+      - name: Check licenses
+        run: cargo deny check
+
+  rust-clippy:
+    name: Rust Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  # ============== JS/TS AUDITS ==============
+  npm-audit:
+    name: NPM Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        id: npm-audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Upload audit results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-audit-results
+          path: npm-audit.json
+          retention-days: 30
+
+  snyk:
+    name: Snyk Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Snyk
+        id: snyk
+        run: npx snyk test --json > snyk-results.json
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: snyk-results
+          path: snyk-results.json
+          retention-days: 30
+
+  eslint:
+    name: ESLint Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+  # ============== DOCKER AUDITS ==============
+  trivy:
+    name: Trivy Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH'
+          format: 'json'
+          output: 'trivy-results.json'
+        continue-on-error: true
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-results
+          path: trivy-results.json
+          retention-days: 30
+
+      - name: Check for vulnerabilities
+        if: always()
+        run: |
+          if [ -f trivy-results.json ]; then
+            if grep -q '"Vulnerabilities"' trivy-results.json; then
+              echo "Vulnerabilities found!"
+              exit 1
+            fi
+          fi
+
+  hadolint:
+    name: Hadolint Docker Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Hadolint
+        uses: hadolint/hadolint-action@v3.0.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: error
+
+  # ============== SECRETS SCANNING ==============
+  trufflehog:
+    name: Secrets Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --json > trufflehog-results.json
+        continue-on-error: true
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trufflehog-results
+          path: trufflehog-results.json
+          retention-days: 30
+
+      - name: Check for secrets
+        if: always()
+        run: |
+          if [ -f trufflehog-results.json ]; then
+            if grep -q '"Found"' trufflehog-results.json; then
+              echo "Secrets found!"
+              cat trufflehog-results.json
+              exit 1
+            fi
+          fi
+
+  # ============== SUMMARY ==============
+  summary:
+    name: Audit Summary
+    needs: [
+      rust-audit, rust-license, rust-clippy,
+      npm-audit, snyk, eslint,
+      trivy, hadolint,
+      trufflehog
+    ]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## Security Audit Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### Rust" >> $GITHUB_STEP_SUMMARY
+          echo "- Security Audit: ${{ needs.rust-audit.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- License Check: ${{ needs.rust-license.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Code Quality: ${{ needs.rust-clippy.result }}" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### JavaScript/TypeScript" >> $GITHUB_STEP_SUMMARY
+          echo "- NPM Audit: ${{ needs.npm-audit.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Snyk: ${{ needs.snyk.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ESLint: ${{ needs.eslint.result }}" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Docker" >> $GITHUB_STEP_SUMMARY
+          echo "- Trivy: ${{ needs.trivy.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Hadolint: ${{ needs.hadolint.result }}" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Secrets" >> $GITHUB_STEP_SUMMARY
+          echo "- TruffleHog: ${{ needs.trufflehog.result }}" >> $GITHUB_STEP_SUMMARY

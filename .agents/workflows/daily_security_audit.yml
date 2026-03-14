@@ -1,0 +1,38 @@
+name: Daily Security Audit Workflow
+
+trigger:
+  - schedule: "0 0 * * *"
+  - workflow_dispatch
+
+stages:
+  - rust_audit
+  - js_audit
+  - docker_audit
+  - secrets_scan
+  - notification
+
+rust_audit:
+  tools:
+    - cargo audit
+    - cargo deny check
+
+js_audit:
+  tools:
+    - npm audit
+    - snyk test
+
+docker_audit:
+  tools:
+    - trivy fs
+    - hadolint
+
+secrets_scan:
+  tools:
+    - trufflehog filesystem
+
+notification:
+  on_failure:
+    - discord
+    - telegram
+    - email
+  summary: daily_audit_report
