@@ -1,4 +1,4 @@
-use crate::{AdapterError, AdapterResult, BountyAdapter, SearchQuery};
+use crate::{AdapterError, AdapterResult, BountyAdapter};
 use async_trait::async_trait;
 use obsidian_domain::{Bounty, BountyStatus, BountyType, Platform};
 use reqwest::Client;
@@ -39,7 +39,7 @@ impl GitHubAdapter {
     pub async fn fetch_issues(&self, page: u32) -> AdapterResult<Vec<GitHubIssue>> {
         let mut url = format!("{}/issues", GITHUB_API_URL);
 
-        let mut params = vec![
+        let params = vec![
             ("state".to_string(), "open".to_string()),
             ("per_page".to_string(), "100".to_string()),
             ("page".to_string(), page.to_string()),
@@ -283,7 +283,8 @@ impl BountyAdapter for GitHubAdapter {
 }
 
 #[derive(Debug, Deserialize)]
-struct GitHubIssue {
+#[allow(dead_code)]
+pub struct GitHubIssue {
     id: i64,
     number: i64,
     title: String,
@@ -300,6 +301,7 @@ struct GitHubIssue {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct GitHubLabel {
     name: String,
     color: String,

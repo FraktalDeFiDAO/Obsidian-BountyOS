@@ -1,4 +1,4 @@
-use crate::{AdapterError, AdapterResult, BountyAdapter, SearchQuery};
+use crate::{AdapterError, AdapterResult, BountyAdapter};
 use async_trait::async_trait;
 use obsidian_domain::{Bounty, BountyStatus, BountyType, Platform};
 use reqwest::Client;
@@ -131,13 +131,14 @@ impl BountyAdapter for DeWorkAdapter {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct DeWorkResponse {
     items: Vec<DeWorkTask>,
     total: i32,
 }
 
 #[derive(Debug, Deserialize)]
-struct DeWorkTask {
+pub struct DeWorkTask {
     id: String,
     title: String,
     description: Option<String>,

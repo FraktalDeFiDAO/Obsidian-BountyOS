@@ -1,6 +1,6 @@
-use crate::{AdapterError, AdapterResult, BountyAdapter, SearchQuery};
+use crate::{AdapterError, AdapterResult, BountyAdapter};
 use async_trait::async_trait;
-use obsidian_domain::{Bounty, BountyStatus, BountyType, Platform};
+use obsidian_domain::{Bounty, BountyType, Platform};
 use reqwest::Client;
 use serde::Deserialize;
 
@@ -110,7 +110,8 @@ impl BountyAdapter for GitcoinAdapter {
 }
 
 #[derive(Debug, Deserialize)]
-struct GitcoinGrant {
+#[allow(dead_code)]
+pub struct GitcoinGrant {
     id: i64,
     title: String,
     #[serde(default)]

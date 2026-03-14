@@ -53,7 +53,7 @@ impl QueryRoot {
     async fn bounty(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Option<BountyGql>> {
         let db = ctx.data::<Database>()?;
         let bounty = db
-            .get_bounty(&id.to_string())
+            .get_bounty(id.as_ref())
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))?;
 

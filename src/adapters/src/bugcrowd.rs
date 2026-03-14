@@ -1,4 +1,4 @@
-use crate::{AdapterError, AdapterResult, BountyAdapter, SearchQuery};
+use crate::{AdapterError, AdapterResult, BountyAdapter};
 use async_trait::async_trait;
 use obsidian_domain::{Bounty, BountyStatus, BountyType, Platform};
 use reqwest::Client;
@@ -132,7 +132,7 @@ struct BugcrowdResponse {
 }
 
 #[derive(Debug, Deserialize)]
-struct BugcrowdProgram {
+pub struct BugcrowdProgram {
     id: i64,
     name: String,
     description: Option<String>,

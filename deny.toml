@@ -1,0 +1,26 @@
+[licenses]
+version = 2
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "CC0-1.0",
+    "ISC",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "Unlicense",
+    "Zlib",
+]
+
+deny = [
+    { version = "0", id = "GPL-3.0" },
+    { version = "0", id = "AGPL-3.0" },
+]
+
+[bans]
+multiple-versions = "warn"
+
+[advisories]
+db-urls = ["https://github.com/rustsec/advisory-db"]

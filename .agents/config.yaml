@@ -10,6 +10,7 @@ orchestration:
       "frontend/**": vue-frontend-agent
       ".github/**": devops-agent
       "docs/**": documentation-agent
+      "bounties/**": bounty-hunter-agent
       
   skills:
     auto_discovery: true
@@ -25,12 +26,16 @@ orchestration:
       - testing
       - devops
       - spec_audit
+      - bounty_search
+      - bounty_research
+      - bounty_workspace
       
   workflows:
     on_pr_opened: pr_review
     on_pr_synchronized: pr_audit
     on_schedule: daily_audit
     on_tag: release_deploy
+    on_bounty_hunt: bounty_workflow
     
   agents:
     default: general_agent
@@ -40,6 +45,7 @@ orchestration:
       - platform-adapter-agent
       - devops-agent
       - security-audit-agent
+      - bounty-hunter-agent
 
 audit:
   severity_levels:

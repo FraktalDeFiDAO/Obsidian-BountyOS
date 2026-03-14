@@ -1,4 +1,4 @@
-use crate::{AdapterError, AdapterResult, BountyAdapter, SearchQuery};
+use crate::{AdapterError, AdapterResult, BountyAdapter};
 use async_trait::async_trait;
 use obsidian_domain::{Bounty, BountyStatus, BountyType, Platform};
 use reqwest::Client;
@@ -132,6 +132,7 @@ impl BountyAdapter for LaborXAdapter {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct LaborXResponse {
     items: Vec<LaborXJob>,
     total: i32,
@@ -139,7 +140,7 @@ struct LaborXResponse {
 }
 
 #[derive(Debug, Deserialize)]
-struct LaborXJob {
+pub struct LaborXJob {
     id: String,
     title: String,
     description: Option<String>,
@@ -153,6 +154,7 @@ struct LaborXJob {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct LaborXPayment {
     amount: Option<f64>,
     currency: Option<String>,

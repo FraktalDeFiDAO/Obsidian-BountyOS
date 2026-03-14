@@ -28,7 +28,7 @@ impl Platform {
         }
     }
 
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "github" => Platform::GitHub,
             "gitcoin" => Platform::Gitcoin,
@@ -64,7 +64,7 @@ impl BountyType {
         }
     }
 
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "bugbounty" => BountyType::BugBounty,
             "task" => BountyType::Task,
@@ -98,7 +98,7 @@ impl BountyStatus {
         }
     }
 
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "active" => BountyStatus::Active,
             "closed" => BountyStatus::Closed,

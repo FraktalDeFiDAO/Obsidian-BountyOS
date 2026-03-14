@@ -66,20 +66,20 @@ pub trait BountyAdapter: Send + Sync {
 
     async fn fetch_updates(
         &self,
-        since: chrono::DateTime<chrono::Utc>,
+        _since: chrono::DateTime<chrono::Utc>,
     ) -> AdapterResult<Vec<Bounty>> {
         Err(AdapterError::NotImplemented(
             "fetch_updates not implemented for this platform".to_string(),
         ))
     }
 
-    async fn fetch_bounty(&self, external_id: &str) -> AdapterResult<Option<Bounty>> {
+    async fn fetch_bounty(&self, _external_id: &str) -> AdapterResult<Option<Bounty>> {
         Err(AdapterError::NotImplemented(
             "fetch_bounty not implemented for this platform".to_string(),
         ))
     }
 
-    async fn search(&self, query: &SearchQuery) -> AdapterResult<Vec<Bounty>> {
+    async fn search(&self, _query: &SearchQuery) -> AdapterResult<Vec<Bounty>> {
         Err(AdapterError::NotImplemented(
             "search not implemented for this platform".to_string(),
         ))
@@ -114,8 +114,8 @@ impl AdapterRegistry {
         self.adapters.insert(platform, adapter);
     }
 
-    pub fn get(&self, platform: &Platform) -> Option<&Box<dyn BountyAdapter>> {
-        self.adapters.get(platform)
+    pub fn get(&self, platform: &Platform) -> Option<&dyn BountyAdapter> {
+        self.adapters.get(platform).map(|b| b.as_ref())
     }
 
     pub fn platforms(&self) -> Vec<Platform> {

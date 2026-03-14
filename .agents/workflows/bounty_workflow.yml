@@ -1,0 +1,94 @@
+name: Bounty Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Bounty platform to search'
+        required: false
+        type: string
+      keywords:
+        description: 'Search keywords'
+        required: false
+        type: string
+      min_reward:
+        description: 'Minimum reward ($)'
+        required: false
+        type: number
+        default: 100
+
+jobs:
+  search-bounties:
+    name: Search Bounties
+    runs-on: ubuntu-latest
+    outputs:
+      bounties: ${{ steps.search.outputs.bounties }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load bounty-search skill
+        uses: ./.agents/skills/bounty_search
+
+      - id: search
+        name: Search platforms
+        run: |
+          echo "Searching bounties on platform: ${{ github.inputs.platform }}"
+          echo "Keywords: ${{ github.inputs.keywords }}"
+          # Search logic here
+          echo "bounties=[]" >> $GITHUB_OUTPUT
+
+  research-bounty:
+    name: Research Bounty
+    needs: search-bounties
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        bounty: ${{ fromJson(needs.search-bounties.outputs.bounties) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load bounty-research skill
+        uses: ./.agents/skills/bounty_research
+
+      - name: Research ${{ matrix.bounty.id }}
+        run: |
+          # Research each bounty
+          echo "Researching bounty: ${{ matrix.bounty.title }}"
+
+  prepare-workspace:
+    name: Prepare Workspace
+    needs: research-bounty
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load bounty-workspace skill
+        uses: ./.agents/skills/bounty_workspace
+
+      - name: Create workspace
+        run: |
+          # Create workspace for each viable bounty
+          echo "Creating workspace"
+
+      - name: Setup Docker environment
+        run: |
+          cd workspace
+          docker build -t bounty-${{ matrix.bounty.id }} .
+          docker-compose up -d
+
+  create-testing-suite:
+    name: Create Testing Suite
+    needs: prepare-workspace
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create tests
+        run: |
+          # Create testing infrastructure
+          echo "Creating testing suite"
+
+      - name: Verify podman/docker
+        run: |
+          which podman || which docker

@@ -1,11 +1,9 @@
 use clap::{Parser, Subcommand};
 use obsidian_adapters::{
-    AdapterRegistry, BountyAdapter, BugcrowdAdapter, DeWorkAdapter, GitHubAdapter, GitcoinAdapter,
+    AdapterRegistry, BugcrowdAdapter, DeWorkAdapter, GitHubAdapter, GitcoinAdapter,
     HackerOneAdapter, LaborXAdapter,
 };
 use obsidian_db::{BountyRepository, Database};
-use std::sync::Arc;
-use tokio::sync::RwLock;
 use tracing::{error, info, Level};
 use tracing_subscriber::FmtSubscriber;
 
@@ -194,7 +192,7 @@ async fn get_database() -> Result<Database, Box<dyn std::error::Error>> {
 async fn run_scan(
     platform: Option<String>,
     all: bool,
-    force: bool,
+    _force: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let db = get_database().await?;
 
@@ -224,7 +222,7 @@ async fn run_scan(
     let platforms_to_scan = if all {
         registry.platforms()
     } else if let Some(p) = platform {
-        vec![obsidian_domain::Platform::from_str(&p)]
+        vec![obsidian_domain::Platform::parse(&p)]
     } else {
         registry.platforms()
     };
@@ -255,8 +253,8 @@ async fn run_scan(
 }
 
 async fn run_list(
-    platform: Option<String>,
-    status: Option<String>,
+    _platform: Option<String>,
+    _status: Option<String>,
     limit: usize,
     offset: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {

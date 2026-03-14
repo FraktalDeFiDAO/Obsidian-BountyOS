@@ -154,12 +154,12 @@ impl Database {
         Ok(Bounty {
             id: uuid::Uuid::parse_str(&id).unwrap_or_default(),
             external_id: row.get("external_id")?,
-            platform: Platform::from_str(&platform_str),
+            platform: Platform::parse(&platform_str),
             title: row.get("title")?,
             description: row.get("description").unwrap_or_default(),
             url: row.get("url")?,
-            bounty_type: BountyType::from_str(&bounty_type_str),
-            status: BountyStatus::from_str(&status_str),
+            bounty_type: BountyType::parse(&bounty_type_str),
+            status: BountyStatus::parse(&status_str),
             reward_min: reward_min_str.parse().ok(),
             reward_max: reward_max_str.parse().ok(),
             reward_currency: row
