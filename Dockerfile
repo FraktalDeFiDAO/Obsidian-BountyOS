@@ -1,11 +1,22 @@
-FROM rust:1.82 AS builder
+FROM debian:bookworm-slim AS builder
+
+# Install Rust
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /build
 
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 
-RUN rm -rf target && cargo build --release
+RUN cargo build --release
 
 FROM debian:bookworm-slim
 
