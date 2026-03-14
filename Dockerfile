@@ -2,12 +2,15 @@ FROM rust:1.85 AS builder
 
 WORKDIR /build
 
+# Copy dependency files first for better caching
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 
-RUN rm -rf /usr/local/cargo/registry/cache && \
-    rm -rf /usr/local/cargo/registry/src && \
-    cargo build --release
+# Clean any corrupted cache and build
+RUN cargo clean || true && \
+    rm -rf /usr/local/cargo/registry/index/* || true && \
+    rm -rf /usr/local/cargo/registry/cache/* || true && \
+    cargo build --release --locked || cargo build --release
 
 FROM debian:bookworm-slim
 
