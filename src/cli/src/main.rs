@@ -253,14 +253,24 @@ async fn run_scan(
 }
 
 async fn run_list(
-    _platform: Option<String>,
-    _status: Option<String>,
+    platform: Option<String>,
+    status: Option<String>,
     limit: usize,
     offset: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let db = get_database().await?;
 
-    let bounties = db.list_bounties(limit, offset).await?;
+    let platform_filter = platform.map(|p| obsidian_domain::Platform::parse(&p));
+    let status_filter = status.map(|s| obsidian_domain::BountyStatus::parse(&s));
+
+    let bounties = db
+        .list_bounties_filtered(
+            platform_filter.as_ref(),
+            status_filter.as_ref(),
+            limit,
+            offset,
+        )
+        .await?;
 
     println!(
         "\n{:^6} | {:^30} | {:^10} | {:^15}",
@@ -304,8 +314,9 @@ async fn configure_notify(_channel: String, _test: bool) -> Result<(), Box<dyn s
     Ok(())
 }
 
-async fn run_sync(_platform: Option<String>, _all: bool) -> Result<(), Box<dyn std::error::Error>> {
-    run_scan(None, true, true).await
+async fn run_sync(platform: Option<String>, all: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let sync_all = all || platform.is_none();
+    run_scan(platform, sync_all, true).await
 }
 
 async fn run_config(

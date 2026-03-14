@@ -55,7 +55,28 @@ pub trait BountyRepository: Send + Sync {
     async fn upsert_bounty(&self, bounty: &Bounty) -> DbResult<()>;
     async fn get_bounty(&self, id: &str) -> DbResult<Option<Bounty>>;
     async fn list_bounties(&self, limit: usize, offset: usize) -> DbResult<Vec<Bounty>>;
+    async fn list_bounties_by_platform(
+        &self,
+        platform: &Platform,
+        limit: usize,
+        offset: usize,
+    ) -> DbResult<Vec<Bounty>>;
+    async fn list_bounties_by_status(
+        &self,
+        status: &BountyStatus,
+        limit: usize,
+        offset: usize,
+    ) -> DbResult<Vec<Bounty>>;
+    async fn list_bounties_filtered(
+        &self,
+        platform: Option<&Platform>,
+        status: Option<&BountyStatus>,
+        limit: usize,
+        offset: usize,
+    ) -> DbResult<Vec<Bounty>>;
     async fn count_bounties(&self) -> DbResult<i64>;
+    async fn count_bounties_by_platform(&self, platform: &Platform) -> DbResult<i64>;
+    async fn count_bounties_by_status(&self, status: &BountyStatus) -> DbResult<i64>;
 }
 
 #[async_trait]
@@ -116,10 +137,58 @@ impl BountyRepository for Database {
     }
 
     async fn list_bounties(&self, limit: usize, offset: usize) -> DbResult<Vec<Bounty>> {
+        self.list_bounties_filtered(None, None, limit, offset).await
+    }
+
+    async fn list_bounties_by_platform(
+        &self,
+        platform: &Platform,
+        limit: usize,
+        offset: usize,
+    ) -> DbResult<Vec<Bounty>> {
+        self.list_bounties_filtered(Some(platform), None, limit, offset)
+            .await
+    }
+
+    async fn list_bounties_by_status(
+        &self,
+        status: &BountyStatus,
+        limit: usize,
+        offset: usize,
+    ) -> DbResult<Vec<Bounty>> {
+        self.list_bounties_filtered(None, Some(status), limit, offset)
+            .await
+    }
+
+    async fn list_bounties_filtered(
+        &self,
+        platform: Option<&Platform>,
+        status: Option<&BountyStatus>,
+        limit: usize,
+        offset: usize,
+    ) -> DbResult<Vec<Bounty>> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt =
-            conn.prepare("SELECT * FROM bounties ORDER BY created_at DESC LIMIT ? OFFSET ?")?;
-        let mut rows = stmt.query(params![limit as i64, offset as i64])?;
+
+        let mut sql = String::from("SELECT * FROM bounties WHERE 1=1");
+        let mut params_vec: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+
+        if let Some(p) = platform {
+            sql.push_str(" AND platform = ?");
+            params_vec.push(Box::new(p.as_str().to_string()));
+        }
+        if let Some(s) = status {
+            sql.push_str(" AND status = ?");
+            params_vec.push(Box::new(s.as_str().to_string()));
+        }
+
+        sql.push_str(" ORDER BY created_at DESC LIMIT ? OFFSET ?");
+        params_vec.push(Box::new(limit as i64));
+        params_vec.push(Box::new(offset as i64));
+
+        let mut stmt = conn.prepare(&sql)?;
+        let params_refs: Vec<&dyn rusqlite::ToSql> =
+            params_vec.iter().map(|p| p.as_ref()).collect();
+        let mut rows = stmt.query(params_refs.as_slice())?;
 
         let mut bounties = Vec::new();
         while let Some(row) = rows.next()? {
@@ -131,6 +200,26 @@ impl BountyRepository for Database {
     async fn count_bounties(&self) -> DbResult<i64> {
         let conn = self.conn.lock().unwrap();
         let count: i64 = conn.query_row("SELECT COUNT(*) FROM bounties", [], |row| row.get(0))?;
+        Ok(count)
+    }
+
+    async fn count_bounties_by_platform(&self, platform: &Platform) -> DbResult<i64> {
+        let conn = self.conn.lock().unwrap();
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM bounties WHERE platform = ?",
+            [platform.as_str()],
+            |row| row.get(0),
+        )?;
+        Ok(count)
+    }
+
+    async fn count_bounties_by_status(&self, status: &BountyStatus) -> DbResult<i64> {
+        let conn = self.conn.lock().unwrap();
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM bounties WHERE status = ?",
+            [status.as_str()],
+            |row| row.get(0),
+        )?;
         Ok(count)
     }
 }
