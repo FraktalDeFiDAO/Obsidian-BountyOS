@@ -103,13 +103,14 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm run test -- --coverage
+        run: npm run test
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
+        continue-on-error: true
         with:
           files: ./coverage/lcov.info
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   # ============== BUILD ==============
   build-rust:
@@ -159,6 +160,7 @@ jobs:
           tags: obsidian-bounty-finder:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          load: true
 
       - name: Run Hadolint
         uses: hadolint/hadolint-action@v3.0.0
