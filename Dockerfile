@@ -1,12 +1,10 @@
-FROM rust:1.85 AS builder
+FROM rust:1.82 AS builder
 
 WORKDIR /build
 
-# Copy dependency files first for better caching
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 
-# Build without relying on any cache
 RUN rm -rf target && cargo build --release
 
 FROM debian:bookworm-slim
