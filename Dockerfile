@@ -1,11 +1,13 @@
-FROM rust:1.80 AS builder
+FROM rust:1.85 AS builder
 
 WORKDIR /build
 
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 
-RUN cargo build --release
+RUN rm -rf /usr/local/cargo/registry/cache && \
+    rm -rf /usr/local/cargo/registry/src && \
+    cargo build --release
 
 FROM debian:bookworm-slim
 
