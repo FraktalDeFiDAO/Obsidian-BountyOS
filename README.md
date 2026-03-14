@@ -161,6 +161,18 @@ This project undergoes regular security audits:
 - `trivy` - Container scanning
 - `npm audit` - JS dependency scanning
 
+## Donations
+
+Support the project by donating to any of these wallets:
+
+| Network | Address | Label |
+|---------|---------|-------|
+| Ethereum | `0x0e4c337F1b053F41a0d8CE1d553A997df18Be7af` | Main ETH |
+| Bitcoin | `bc1qg9xj44mya6h6y67w82aw5lqt0rzm7qfsnm4egn` | Main BTC |
+| Solana | `FH84Dg6gh7bWtyZ5a1SBNLp1JBesLoCKx9mekJpr7zHR` | Main SOL |
+| TRON | `TKrZ6Bu36zaVudYWPRcjZTAkTJvK1X7tXa` | Main TRON |
+| RustChain | `RTCbc57f8031699a0bab6e9a8a2769822f19f115dc5` | Main RTC |
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.

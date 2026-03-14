@@ -1,0 +1,29 @@
+{
+  "wallets": {
+    "eth": {
+      "address": "0x0e4c337F1b053F41a0d8CE1d553A997df18Be7af",
+      "network": "ethereum",
+      "label": "Main ETH"
+    },
+    "btc": {
+      "address": "bc1qg9xj44mya6h6y67w82aw5lqt0rzm7qfsnm4egn",
+      "network": "bitcoin",
+      "label": "Main BTC"
+    },
+    "sol": {
+      "address": "FH84Dg6gh7bWtyZ5a1SBNLp1JBesLoCKx9mekJpr7zHR",
+      "network": "solana",
+      "label": "Main SOL"
+    },
+    "tron": {
+      "address": "TKrZ6Bu36zaVudYWPRcjZTAkTJvK1X7tXa",
+      "network": "tron",
+      "label": "Main TRON"
+    },
+    "rtc": {
+      "address": "RTCbc57f8031699a0bab6e9a8a2769822f19f115dc5",
+      "network": "rustchain",
+      "label": "Main RTC"
+    }
+  }
+}
