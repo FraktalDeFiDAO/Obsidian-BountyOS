@@ -1,5 +1,10 @@
 use clap::{Parser, Subcommand};
-use obsidian_adapters::{AdapterRegistry, BountyAdapter, GitHubAdapter, GitcoinAdapter};
+use obsidian_adapters::{
+    AdapterRegistry, BountyAdapter, 
+    GitHubAdapter, GitcoinAdapter, 
+    HackerOneAdapter, BugcrowdAdapter,
+    LaborXAdapter, DeWorkAdapter
+};
 use obsidian_db::{Database, BountyRepository};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -179,9 +184,20 @@ async fn run_scan(platform: Option<String>, all: bool, force: bool) -> Result<()
     let github_token = std::env::var("GITHUB_TOKEN").ok();
     let gitcoin_key = std::env::var("GITCOIN_API_KEY").ok();
     let github_org = std::env::var("GITHUB_ORGANIZATION").ok();
+    let hackerone_key = std::env::var("HACKERONE_API_KEY").ok();
+    let hackerone_user = std::env::var("HACKERONE_USERNAME").ok();
+    let bugcrowd_key = std::env::var("BUGCROWD_API_KEY").ok();
+    let bugcrowd_user = std::env::var("BUGCROWD_USERNAME").ok();
+    let laborx_key = std::env::var("LABORX_API_KEY").ok();
+    let dework_key = std::env::var("DEWORK_API_KEY").ok();
 
+    // Register all adapters
     registry.register(Box::new(GitHubAdapter::new(github_token, github_org)));
     registry.register(Box::new(GitcoinAdapter::new(gitcoin_key)));
+    registry.register(Box::new(HackerOneAdapter::new(hackerone_key, hackerone_user)));
+    registry.register(Box::new(BugcrowdAdapter::new(bugcrowd_key, bugcrowd_user)));
+    registry.register(Box::new(LaborXAdapter::new(laborx_key)));
+    registry.register(Box::new(DeWorkAdapter::new(dework_key)));
 
     let platforms_to_scan = if all {
         registry.platforms()
@@ -288,10 +304,10 @@ async fn show_status() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nPlatforms:");
     println!("  GitHub: {}", if std::env::var("GITHUB_TOKEN").is_ok() { "✓ Configured" } else { "○ Not configured" });
     println!("  Gitcoin: {}", if std::env::var("GITCOIN_API_KEY").is_ok() { "✓ Configured" } else { "○ Not configured" });
-    println!("  HackerOne: ○ Not implemented");
-    println!("  Bugcrowd: ○ Not implemented");
-    println!("  LaborX: ○ Not implemented");
-    println!("  DeWork: ○ Not implemented");
+    println!("  HackerOne: {}", if std::env::var("HACKERONE_API_KEY").is_ok() { "✓ Configured" } else { "○ Not configured" });
+    println!("  Bugcrowd: {}", if std::env::var("BUGCROWD_API_KEY").is_ok() { "✓ Configured" } else { "○ Not configured" });
+    println!("  LaborX: {}", if std::env::var("LABORX_API_KEY").is_ok() { "✓ Configured" } else { "○ Not configured" });
+    println!("  DeWork: {}", if std::env::var("DEWORK_API_KEY").is_ok() { "✓ Configured" } else { "○ Not configured" });
 
     Ok(())
 }

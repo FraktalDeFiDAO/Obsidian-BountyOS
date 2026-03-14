@@ -8,6 +8,7 @@ use obsidian_api::{create_schema, AppSchema};
 use obsidian_db::Database;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use std::net::SocketAddr;
 
 async fn graphql_handler(
     State(schema): State<Arc<RwLock<AppSchema>>>,
@@ -57,12 +58,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_else(|_| "8080".to_string())
         .parse()?;
 
-    let addr = format!("{}:{}", host, port);
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
     println!("Starting server at http://{}", addr);
 
-    axum::Server::bind(&addr.parse()?)
-        .serve(app.into_make_service())
-        .await?;
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }

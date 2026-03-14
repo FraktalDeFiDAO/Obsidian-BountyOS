@@ -1,5 +1,5 @@
 use async_graphql::{Context, EmptySubscription, Object, Schema, SimpleObject, ID};
-use obsidian_db::Database;
+use obsidian_db::{Database, BountyRepository};
 
 pub struct QueryRoot;
 
@@ -90,7 +90,7 @@ impl QueryRoot {
         let total = db
             .count_bounties()
             .await
-            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+            .map_err(|e: obsidian_db::DbError| async_graphql::Error::new(e.to_string()))?;
 
         Ok(Stats { total })
     }
