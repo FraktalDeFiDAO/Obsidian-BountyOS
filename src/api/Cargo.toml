@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 description = "API server for ObsidianBountyFinder"
 
+[[bin]]
+name = "obsidian-api-server"
+path = "src/main.rs"
+
 [dependencies]
 obsidian-domain = { path = "../domain" }
 obsidian-db = { path = "../db" }

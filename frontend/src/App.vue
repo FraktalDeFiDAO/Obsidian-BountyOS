@@ -10,6 +10,7 @@ import { RouterView } from 'vue-router'
         <nav class="flex gap-4">
           <RouterLink to="/" class="hover:text-indigo-400">Home</RouterLink>
           <RouterLink to="/bounties" class="hover:text-indigo-400">Bounties</RouterLink>
+          <RouterLink to="/wallet" class="hover:text-indigo-400">Wallet</RouterLink>
           <RouterLink to="/settings" class="hover:text-indigo-400">Settings</RouterLink>
         </nav>
       </div>
