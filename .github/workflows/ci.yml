@@ -132,7 +132,7 @@ jobs:
 
       - name: Build CLI
         run: |
-          cargo build --release -p obsidian-bounty-finder-cli
+          cargo build --release -p obsidian-cli
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -140,7 +140,6 @@ jobs:
           name: rust-binaries
           path: |
             target/release/obsidian-bounty-finder
-            target/release/obsidian-bounty-finder-cli
 
   build-docker:
     name: Docker Build
