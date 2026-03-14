@@ -44,7 +44,7 @@ cargo clippy -p adapter-new-platform
 ```
 
 ## Integration
-1. Add to `Cargo.toml` workspace
+1. Add to Cargo.toml workspace
 2. Add platform to enum
 3. Register in sync manager
 4. Add configuration to .env.example
