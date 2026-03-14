@@ -6,11 +6,8 @@ WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 
-# Clean any corrupted cache and build
-RUN cargo clean || true && \
-    rm -rf /usr/local/cargo/registry/index/* || true && \
-    rm -rf /usr/local/cargo/registry/cache/* || true && \
-    cargo build --release --locked || cargo build --release
+# Build without relying on any cache
+RUN rm -rf target && cargo build --release
 
 FROM debian:bookworm-slim
 
