@@ -44,8 +44,18 @@ npm run test
 - Tests pass
 - 80% test coverage
 - npm audit has no vulnerabilities
+- **SPEC compliance verified**
+
+## SPEC Compliance
+Before completion, verify:
+- [ ] Components match SPEC UI requirements
+- [ ] State management (Pinia) follows SPEC store structure
+- [ ] Routing follows SPEC route definitions
+- [ ] Wallet integration matches SPEC wallet spec
+- [ ] UI matches SPEC mobile-first design requirements
 
 ## Workflow Integration
 - Triggered on changes to frontend files
 - Runs lint + test + security
+- **Runs SPEC audit before completion**
 - Creates PR review comments

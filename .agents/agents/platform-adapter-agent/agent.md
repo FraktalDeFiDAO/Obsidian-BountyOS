@@ -49,8 +49,20 @@ src/adapters/
 - Mock data for testing
 - Error handling for all API errors
 - Rate limiting handled
+- **SPEC compliance verified**
+
+## SPEC Compliance
+Before completion, verify:
+- [ ] Adapter implements SPEC BountyAdapter trait correctly
+- [ ] fetch_all() matches SPEC signature
+- [ ] fetch_updates() matches SPEC signature
+- [ ] Error types match SPEC AdapterError enum
+- [ ] Platform mapping matches SPEC Platform enum
+- [ ] Data normalization follows SPEC data models
+- [ ] Rate limiting follows SPEC requirements
 
 ## Workflow Integration
 - Triggered on changes to adapters
 - Runs adapter-specific tests
 - Validates API integration
+- **Runs SPEC audit before completion**

@@ -9,6 +9,7 @@ stages:
   - lint
   - test
   - security
+  - spec_audit
   - quality
 
 lint:
@@ -29,11 +30,24 @@ security:
     - trivy fs
     - trufflehog
 
+spec_audit:
+  description: Verify implementation matches SPEC.md
+  required: true
+  checks:
+    - verify data models match SPEC
+    - verify API schema matches SPEC
+    - verify CLI commands match SPEC
+    - verify database schema matches SPEC
+    - verify adapter interface matches SPEC
+    - verify notification system matches SPEC
+    - verify webhook server matches SPEC
+
 quality:
   checks:
     - coverage >= 80%
     - no critical_vulnerabilities
     - no secrets_found
+    - spec_compliance_verified
 
 notification:
   channels:

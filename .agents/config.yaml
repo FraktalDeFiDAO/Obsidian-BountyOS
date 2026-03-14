@@ -24,6 +24,7 @@ orchestration:
       - platform_adapter
       - testing
       - devops
+      - spec_audit
       
   workflows:
     on_pr_opened: pr_review
@@ -54,6 +55,20 @@ audit:
     low:
       action: pass
       notify: false
+      
+  spec_audit:
+    enabled: true
+    required_before_completion: true
+    check_items:
+      - verify data models match SPEC
+      - verify API schema matches SPEC
+      - verify CLI commands match SPEC
+      - verify database schema matches SPEC
+      - verify adapter interface matches SPEC
+      - verify UI components match SPEC
+    tools:
+      - spec_validator
+      - schema_verifier
       
   auto_fix:
     enabled: true

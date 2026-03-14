@@ -41,8 +41,18 @@ cargo run --bin obsidian-bounty-finder
 - cargo test passes
 - cargo audit has no vulnerabilities
 - 80% test coverage
+- **SPEC compliance verified**
+
+## SPEC Compliance
+Before completion, verify:
+- [ ] Code matches `docs/planning/SPEC.md` data models
+- [ ] API endpoints match GraphQL schema in SPEC
+- [ ] CLI commands match SPEC command structure
+- [ ] Database schema matches SPEC schema
+- [ ] Adapter trait matches SPEC interface
 
 ## Workflow Integration
 - Triggered on changes to Rust files
 - Runs lint + test + security
+- **Runs SPEC audit before completion**
 - Creates PR review comments

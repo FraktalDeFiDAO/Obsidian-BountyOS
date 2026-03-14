@@ -47,9 +47,20 @@ make audit
 - No security vulnerabilities
 - Docker image builds successfully
 - Pre-commit hooks configured
+- **SPEC compliance verified**
+
+## SPEC Compliance
+Before completion, verify:
+- [ ] CI workflow matches SPEC pipeline stages
+- [ ] CD workflow matches SPEC deployment spec
+- [ ] Security audit matches SPEC audit matrix
+- [ ] Docker configuration matches SPEC container spec
+- [ ] Makefile commands match SPEC CLI spec
+- [ ] Pre-commit hooks include SPEC required checks
 
 ## Best Practices
 - Immutable Docker tags
 - Multi-stage builds
 - Security scanning in CI
 - Local CI with act
+- **SPEC verification before release**
