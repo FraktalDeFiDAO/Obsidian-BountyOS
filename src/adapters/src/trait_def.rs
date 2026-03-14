@@ -36,22 +36,22 @@ impl Default for SearchQuery {
 pub enum AdapterError {
     #[error("Network error: {0}")]
     Network(String),
-    
+
     #[error("API error: {0}")]
     Api(String),
-    
+
     #[error("Parse error: {0}")]
     Parse(String),
-    
+
     #[error("Rate limited, retry after: {0}")]
     RateLimited(String),
-    
+
     #[error("Authentication error: {0}")]
     Auth(String),
-    
+
     #[error("Configuration error: {0}")]
     Config(String),
-    
+
     #[error("Not implemented: {0}")]
     NotImplemented(String),
 }
@@ -61,29 +61,38 @@ pub type AdapterResult<T> = Result<T, AdapterError>;
 #[async_trait]
 pub trait BountyAdapter: Send + Sync {
     fn platform(&self) -> Platform;
-    
+
     async fn fetch_all(&self) -> AdapterResult<Vec<Bounty>>;
-    
-    async fn fetch_updates(&self, since: chrono::DateTime<chrono::Utc>) -> AdapterResult<Vec<Bounty>> {
-        Err(AdapterError::NotImplemented("fetch_updates not implemented for this platform".to_string()))
+
+    async fn fetch_updates(
+        &self,
+        since: chrono::DateTime<chrono::Utc>,
+    ) -> AdapterResult<Vec<Bounty>> {
+        Err(AdapterError::NotImplemented(
+            "fetch_updates not implemented for this platform".to_string(),
+        ))
     }
-    
+
     async fn fetch_bounty(&self, external_id: &str) -> AdapterResult<Option<Bounty>> {
-        Err(AdapterError::NotImplemented("fetch_bounty not implemented for this platform".to_string()))
+        Err(AdapterError::NotImplemented(
+            "fetch_bounty not implemented for this platform".to_string(),
+        ))
     }
-    
+
     async fn search(&self, query: &SearchQuery) -> AdapterResult<Vec<Bounty>> {
-        Err(AdapterError::NotImplemented("search not implemented for this platform".to_string()))
+        Err(AdapterError::NotImplemented(
+            "search not implemented for this platform".to_string(),
+        ))
     }
-    
+
     fn supports_hooks(&self) -> bool {
         false
     }
-    
+
     fn hook_url(&self) -> Option<String> {
         None
     }
-    
+
     fn validate_config(&self) -> AdapterResult<()> {
         Ok(())
     }

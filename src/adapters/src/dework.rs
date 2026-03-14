@@ -25,16 +25,17 @@ impl DeWorkAdapter {
 
     pub async fn fetch_tasks(&self) -> AdapterResult<Vec<DeWorkTask>> {
         let url = format!("{}/tasks", DEWORK_API_URL);
-        
+
         let mut request = self.client.get(&url);
 
         if let Some(key) = &self.api_key {
             request = request.header("Authorization", format!("Bearer {}", key));
         }
 
-        let response = request.send().await.map_err(|e| {
-            AdapterError::Network(e.to_string())
-        })?;
+        let response = request
+            .send()
+            .await
+            .map_err(|e| AdapterError::Network(e.to_string()))?;
 
         if response.status() == 401 {
             return Err(AdapterError::Auth("Invalid DeWork credentials".to_string()));
@@ -45,12 +46,16 @@ impl DeWorkAdapter {
         }
 
         if !response.status().is_success() {
-            return Err(AdapterError::Api(format!("DeWork API error: {}", response.status())));
+            return Err(AdapterError::Api(format!(
+                "DeWork API error: {}",
+                response.status()
+            )));
         }
 
-        let tasks: DeWorkResponse = response.json().await.map_err(|e| {
-            AdapterError::Parse(e.to_string())
-        })?;
+        let tasks: DeWorkResponse = response
+            .json()
+            .await
+            .map_err(|e| AdapterError::Parse(e.to_string()))?;
 
         Ok(tasks.items)
     }
@@ -65,7 +70,7 @@ impl DeWorkAdapter {
         );
 
         bounty.description = task.description.clone().unwrap_or_default();
-        
+
         if let Some(price) = task.price {
             bounty.reward_min = rust_decimal::Decimal::try_from(price).ok();
             bounty.reward_max = bounty.reward_min;
@@ -111,7 +116,9 @@ impl BountyAdapter for DeWorkAdapter {
 
         let bounties: Vec<Bounty> = tasks
             .into_iter()
-            .filter(|t| t.status.as_deref() == Some("open") || t.status.as_deref() == Some("active"))
+            .filter(|t| {
+                t.status.as_deref() == Some("open") || t.status.as_deref() == Some("active")
+            })
             .map(|t| self.task_to_bounty(&t))
             .collect();
 

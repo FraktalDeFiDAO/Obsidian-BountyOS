@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use obsidian_domain::{Bounty, BountyStatus, BountyType, Platform};
-use rusqlite::{Connection, params};
+use rusqlite::{params, Connection};
 use std::sync::Mutex;
 use thiserror::Error;
 
@@ -42,9 +42,11 @@ impl Database {
                 synced_at TEXT NOT NULL,
                 expires_at TEXT,
                 UNIQUE(platform, external_id)
-            )"
+            )",
         )?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 }
 
@@ -105,7 +107,7 @@ impl BountyRepository for Database {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare("SELECT * FROM bounties WHERE id = ?")?;
         let mut rows = stmt.query(params![id])?;
-        
+
         if let Some(row) = rows.next()? {
             Ok(Some(Self::row_to_bounty(row)?))
         } else {
@@ -115,9 +117,10 @@ impl BountyRepository for Database {
 
     async fn list_bounties(&self, limit: usize, offset: usize) -> DbResult<Vec<Bounty>> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT * FROM bounties ORDER BY created_at DESC LIMIT ? OFFSET ?")?;
+        let mut stmt =
+            conn.prepare("SELECT * FROM bounties ORDER BY created_at DESC LIMIT ? OFFSET ?")?;
         let mut rows = stmt.query(params![limit as i64, offset as i64])?;
-        
+
         let mut bounties = Vec::new();
         while let Some(row) = rows.next()? {
             bounties.push(Self::row_to_bounty(row)?);
@@ -159,7 +162,10 @@ impl Database {
             status: BountyStatus::from_str(&status_str),
             reward_min: reward_min_str.parse().ok(),
             reward_max: reward_max_str.parse().ok(),
-            reward_currency: row.get("reward_currency").ok().filter(|s: &String| !s.is_empty()),
+            reward_currency: row
+                .get("reward_currency")
+                .ok()
+                .filter(|s: &String| !s.is_empty()),
             skills: serde_json::from_str(&skills_str).unwrap_or_default(),
             tags: serde_json::from_str(&tags_str).unwrap_or_default(),
             metadata: serde_json::from_str(&metadata_str).unwrap_or(serde_json::json!({})),
@@ -172,9 +178,12 @@ impl Database {
             synced_at: chrono::DateTime::parse_from_rfc3339(&synced_at_str)
                 .map(|d| d.with_timezone(&chrono::Utc))
                 .unwrap_or_else(|_| chrono::Utc::now()),
-            expires_at: if expires_at_str.is_empty() { None } else {
+            expires_at: if expires_at_str.is_empty() {
+                None
+            } else {
                 chrono::DateTime::parse_from_rfc3339(&expires_at_str)
-                    .map(|d| d.with_timezone(&chrono::Utc)).ok()
+                    .map(|d| d.with_timezone(&chrono::Utc))
+                    .ok()
             },
         })
     }

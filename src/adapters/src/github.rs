@@ -31,12 +31,14 @@ impl GitHubAdapter {
     }
 
     fn build_auth_header(&self) -> Option<(String, String)> {
-        self.token.as_ref().map(|t| ("Authorization".to_string(), format!("Bearer {}", t)))
+        self.token
+            .as_ref()
+            .map(|t| ("Authorization".to_string(), format!("Bearer {}", t)))
     }
 
     pub async fn fetch_issues(&self, page: u32) -> AdapterResult<Vec<GitHubIssue>> {
         let mut url = format!("{}/issues", GITHUB_API_URL);
-        
+
         let mut params = vec![
             ("state".to_string(), "open".to_string()),
             ("per_page".to_string(), "100".to_string()),
@@ -55,32 +57,38 @@ impl GitHubAdapter {
             request = request.header(&key, &value);
         }
 
-        let response = request.send().await.map_err(|e| {
-            AdapterError::Network(e.to_string())
-        })?;
+        let response = request
+            .send()
+            .await
+            .map_err(|e| AdapterError::Network(e.to_string()))?;
 
         if response.status() == 401 {
             return Err(AdapterError::Auth("Invalid GitHub token".to_string()));
         }
 
         if response.status() == 403 {
-            let remaining = response.headers()
+            let remaining = response
+                .headers()
                 .get("X-RateLimit-Remaining")
                 .and_then(|v| v.to_str().ok())
                 .unwrap_or("0");
-            
+
             if remaining == "0" {
                 return Err(AdapterError::RateLimited("Rate limit exceeded".to_string()));
             }
         }
 
         if !response.status().is_success() {
-            return Err(AdapterError::Api(format!("GitHub API error: {}", response.status())));
+            return Err(AdapterError::Api(format!(
+                "GitHub API error: {}",
+                response.status()
+            )));
         }
 
-        let issues: Vec<GitHubIssue> = response.json().await.map_err(|e| {
-            AdapterError::Parse(e.to_string())
-        })?;
+        let issues: Vec<GitHubIssue> = response
+            .json()
+            .await
+            .map_err(|e| AdapterError::Parse(e.to_string()))?;
 
         Ok(issues)
     }
@@ -92,11 +100,11 @@ impl GitHubAdapter {
 
         let has_bounty_label = issue.labels.iter().any(|l| {
             let name = l.name.to_lowercase();
-            name.contains("bounty") || 
-            name.contains("reward") || 
-            name.contains("paid") ||
-            name.contains("help wanted") ||
-            name.contains("funding")
+            name.contains("bounty")
+                || name.contains("reward")
+                || name.contains("paid")
+                || name.contains("help wanted")
+                || name.contains("funding")
         });
 
         if !has_bounty_label {
@@ -115,25 +123,34 @@ impl GitHubAdapter {
             BountyType::Bounty,
         );
 
-        Some(bounty)
-            .map(|b| {
-                let mut b = b;
-                b.description = issue.body.clone().unwrap_or_default();
-                b.status = if issue.state == "open" { BountyStatus::Active } else { BountyStatus::Closed };
-                b.tags = tags;
-                b.skills = skills;
-                b.reward_min = reward_min;
-                b.reward_max = reward_max;
-                b.reward_currency = currency;
-                b.metadata = serde_json::json!({
-                    "comments": issue.comments,
-                    "labels": issue.labels.iter().map(|l| &l.name).collect::<Vec<_>>(),
-                });
-                b
-            })
+        Some(bounty).map(|b| {
+            let mut b = b;
+            b.description = issue.body.clone().unwrap_or_default();
+            b.status = if issue.state == "open" {
+                BountyStatus::Active
+            } else {
+                BountyStatus::Closed
+            };
+            b.tags = tags;
+            b.skills = skills;
+            b.reward_min = reward_min;
+            b.reward_max = reward_max;
+            b.reward_currency = currency;
+            b.metadata = serde_json::json!({
+                "comments": issue.comments,
+                "labels": issue.labels.iter().map(|l| &l.name).collect::<Vec<_>>(),
+            });
+            b
+        })
     }
 
-    fn extract_reward(body: &Option<String>) -> (Option<rust_decimal::Decimal>, Option<rust_decimal::Decimal>, Option<String>) {
+    fn extract_reward(
+        body: &Option<String>,
+    ) -> (
+        Option<rust_decimal::Decimal>,
+        Option<rust_decimal::Decimal>,
+        Option<String>,
+    ) {
         let body = match body {
             Some(b) => b,
             None => return (None, None, None),
@@ -186,13 +203,33 @@ impl GitHubAdapter {
         };
 
         let skill_keywords = [
-            "rust", "javascript", "typescript", "python", "go", "java", "c++", "c#",
-            "react", "vue", "angular", "node", "docker", "kubernetes", "aws", "gcp",
-            "solidity", "rust", "graphql", "rest", "sql", "postgresql", "mongodb",
+            "rust",
+            "javascript",
+            "typescript",
+            "python",
+            "go",
+            "java",
+            "c++",
+            "c#",
+            "react",
+            "vue",
+            "angular",
+            "node",
+            "docker",
+            "kubernetes",
+            "aws",
+            "gcp",
+            "solidity",
+            "rust",
+            "graphql",
+            "rest",
+            "sql",
+            "postgresql",
+            "mongodb",
         ];
 
         let body_lower = body.to_lowercase();
-        
+
         skill_keywords
             .iter()
             .filter(|s| body_lower.contains(*s))

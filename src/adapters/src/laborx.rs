@@ -25,16 +25,17 @@ impl LaborXAdapter {
 
     pub async fn fetch_jobs(&self) -> AdapterResult<Vec<LaborXJob>> {
         let url = format!("{}/jobs", LABORX_API_URL);
-        
+
         let mut request = self.client.get(&url);
 
         if let Some(key) = &self.api_key {
             request = request.header("Authorization", format!("Bearer {}", key));
         }
 
-        let response = request.send().await.map_err(|e| {
-            AdapterError::Network(e.to_string())
-        })?;
+        let response = request
+            .send()
+            .await
+            .map_err(|e| AdapterError::Network(e.to_string()))?;
 
         if response.status() == 401 {
             return Err(AdapterError::Auth("Invalid LaborX credentials".to_string()));
@@ -45,12 +46,16 @@ impl LaborXAdapter {
         }
 
         if !response.status().is_success() {
-            return Err(AdapterError::Api(format!("LaborX API error: {}", response.status())));
+            return Err(AdapterError::Api(format!(
+                "LaborX API error: {}",
+                response.status()
+            )));
         }
 
-        let jobs: LaborXResponse = response.json().await.map_err(|e| {
-            AdapterError::Parse(e.to_string())
-        })?;
+        let jobs: LaborXResponse = response
+            .json()
+            .await
+            .map_err(|e| AdapterError::Parse(e.to_string()))?;
 
         Ok(jobs.items)
     }
@@ -65,7 +70,7 @@ impl LaborXAdapter {
         );
 
         bounty.description = job.description.clone().unwrap_or_default();
-        
+
         if let Some(payment) = &job.payment {
             if let Some(amount) = payment.amount {
                 bounty.reward_min = rust_decimal::Decimal::try_from(amount).ok();

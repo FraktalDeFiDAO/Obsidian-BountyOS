@@ -19,33 +19,44 @@ impl BugcrowdAdapter {
             .build()
             .expect("Failed to create HTTP client");
 
-        Self { client, api_key, username }
+        Self {
+            client,
+            api_key,
+            username,
+        }
     }
 
     pub async fn fetch_programs(&self) -> AdapterResult<Vec<BugcrowdProgram>> {
         let url = format!("{}/programs", BUGCROWD_API_URL);
-        
+
         let mut request = self.client.get(&url);
 
         if let (Some(key), Some(user)) = (&self.api_key, &self.username) {
             request = request.basic_auth(user, Some(key));
         }
 
-        let response = request.send().await.map_err(|e| {
-            AdapterError::Network(e.to_string())
-        })?;
+        let response = request
+            .send()
+            .await
+            .map_err(|e| AdapterError::Network(e.to_string()))?;
 
         if response.status() == 401 {
-            return Err(AdapterError::Auth("Invalid Bugcrowd credentials".to_string()));
+            return Err(AdapterError::Auth(
+                "Invalid Bugcrowd credentials".to_string(),
+            ));
         }
 
         if !response.status().is_success() {
-            return Err(AdapterError::Api(format!("Bugcrowd API error: {}", response.status())));
+            return Err(AdapterError::Api(format!(
+                "Bugcrowd API error: {}",
+                response.status()
+            )));
         }
 
-        let programs: BugcrowdResponse = response.json().await.map_err(|e| {
-            AdapterError::Parse(e.to_string())
-        })?;
+        let programs: BugcrowdResponse = response
+            .json()
+            .await
+            .map_err(|e| AdapterError::Parse(e.to_string()))?;
 
         Ok(programs.programs)
     }
@@ -60,7 +71,7 @@ impl BugcrowdAdapter {
         );
 
         bounty.description = program.description.clone().unwrap_or_default();
-        
+
         if let Some(status) = &program.status {
             bounty.status = match status.as_str() {
                 "active" => BountyStatus::Active,
@@ -106,7 +117,9 @@ impl BountyAdapter for BugcrowdAdapter {
     fn validate_config(&self) -> AdapterResult<()> {
         if let Some(key) = &self.api_key {
             if key.is_empty() {
-                return Err(AdapterError::Config("Bugcrowd API key is empty".to_string()));
+                return Err(AdapterError::Config(
+                    "Bugcrowd API key is empty".to_string(),
+                ));
             }
         }
         Ok(())

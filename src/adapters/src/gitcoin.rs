@@ -23,24 +23,29 @@ impl GitcoinAdapter {
 
     pub async fn fetch_grants(&self) -> AdapterResult<Vec<GitcoinGrant>> {
         let url = format!("{}/grants.json", GITCOIN_API_URL);
-        
+
         let mut request = self.client.get(&url);
 
         if let Some(key) = &self.api_key {
             request = request.header("X-Api-Key", key);
         }
 
-        let response = request.send().await.map_err(|e| {
-            AdapterError::Network(e.to_string())
-        })?;
+        let response = request
+            .send()
+            .await
+            .map_err(|e| AdapterError::Network(e.to_string()))?;
 
         if !response.status().is_success() {
-            return Err(AdapterError::Api(format!("Gitcoin API error: {}", response.status())));
+            return Err(AdapterError::Api(format!(
+                "Gitcoin API error: {}",
+                response.status()
+            )));
         }
 
-        let grants: Vec<GitcoinGrant> = response.json().await.map_err(|e| {
-            AdapterError::Parse(e.to_string())
-        })?;
+        let grants: Vec<GitcoinGrant> = response
+            .json()
+            .await
+            .map_err(|e| AdapterError::Parse(e.to_string()))?;
 
         Ok(grants)
     }
@@ -56,12 +61,12 @@ impl GitcoinAdapter {
 
         bounty.description = grant.description.clone().unwrap_or_default();
         bounty.tags = grant.tags.clone();
-        
+
         if grant.amount_received > 0.0 {
             bounty.reward_min = rust_decimal::Decimal::try_from(grant.amount_received).ok();
             bounty.reward_max = bounty.reward_min;
         }
-        
+
         if let Some(token) = &grant.token {
             bounty.reward_currency = Some(token.to_uppercase());
         }

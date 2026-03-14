@@ -1,5 +1,5 @@
 use async_graphql::{Context, EmptySubscription, Object, Schema, SimpleObject, ID};
-use obsidian_db::{Database, BountyRepository};
+use obsidian_db::{BountyRepository, Database};
 
 pub struct QueryRoot;
 
@@ -76,12 +76,30 @@ impl QueryRoot {
 
     async fn platforms(&self) -> Vec<PlatformInfo> {
         vec![
-            PlatformInfo { name: "github".to_string(), enabled: true },
-            PlatformInfo { name: "gitcoin".to_string(), enabled: true },
-            PlatformInfo { name: "hackerone".to_string(), enabled: false },
-            PlatformInfo { name: "bugcrowd".to_string(), enabled: false },
-            PlatformInfo { name: "laborx".to_string(), enabled: false },
-            PlatformInfo { name: "dework".to_string(), enabled: false },
+            PlatformInfo {
+                name: "github".to_string(),
+                enabled: true,
+            },
+            PlatformInfo {
+                name: "gitcoin".to_string(),
+                enabled: true,
+            },
+            PlatformInfo {
+                name: "hackerone".to_string(),
+                enabled: false,
+            },
+            PlatformInfo {
+                name: "bugcrowd".to_string(),
+                enabled: false,
+            },
+            PlatformInfo {
+                name: "laborx".to_string(),
+                enabled: false,
+            },
+            PlatformInfo {
+                name: "dework".to_string(),
+                enabled: false,
+            },
         ]
     }
 
@@ -96,7 +114,10 @@ impl QueryRoot {
     }
 
     async fn health(&self) -> Health {
-        Health { status: "healthy".to_string(), version: "0.1.0".to_string() }
+        Health {
+            status: "healthy".to_string(),
+            version: "0.1.0".to_string(),
+        }
     }
 }
 
@@ -104,10 +125,7 @@ pub struct MutationRoot;
 
 #[Object]
 impl MutationRoot {
-    async fn sync_platform(
-        &self,
-        _platform: String,
-    ) -> async_graphql::Result<SyncResult> {
+    async fn sync_platform(&self, _platform: String) -> async_graphql::Result<SyncResult> {
         Ok(SyncResult {
             platform: _platform,
             success: true,

@@ -1,15 +1,15 @@
-pub mod trait_def;
-pub mod github;
-pub mod gitcoin;
-pub mod hackerone;
 pub mod bugcrowd;
-pub mod laborx;
 pub mod dework;
+pub mod gitcoin;
+pub mod github;
+pub mod hackerone;
+pub mod laborx;
+pub mod trait_def;
 
-pub use trait_def::*;
-pub use github::GitHubAdapter;
-pub use gitcoin::GitcoinAdapter;
-pub use hackerone::HackerOneAdapter;
 pub use bugcrowd::BugcrowdAdapter;
-pub use laborx::LaborXAdapter;
 pub use dework::DeWorkAdapter;
+pub use gitcoin::GitcoinAdapter;
+pub use github::GitHubAdapter;
+pub use hackerone::HackerOneAdapter;
+pub use laborx::LaborXAdapter;
+pub use trait_def::*;

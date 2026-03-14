@@ -1,14 +1,12 @@
 use clap::{Parser, Subcommand};
 use obsidian_adapters::{
-    AdapterRegistry, BountyAdapter, 
-    GitHubAdapter, GitcoinAdapter, 
-    HackerOneAdapter, BugcrowdAdapter,
-    LaborXAdapter, DeWorkAdapter
+    AdapterRegistry, BountyAdapter, BugcrowdAdapter, DeWorkAdapter, GitHubAdapter, GitcoinAdapter,
+    HackerOneAdapter, LaborXAdapter,
 };
-use obsidian_db::{Database, BountyRepository};
+use obsidian_db::{BountyRepository, Database};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{info, error, Level};
+use tracing::{error, info, Level};
 use tracing_subscriber::FmtSubscriber;
 
 #[derive(Parser)]
@@ -128,16 +126,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_target(false)
         .finish();
 
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed to set tracing subscriber");
+    tracing::subscriber::set_global_default(subscriber).expect("Failed to set tracing subscriber");
 
     match cli.command {
-        Commands::Scan { platform, all, force } => {
-            info!("Starting scan: platform={:?}, all={}, force={}", platform, all, force);
+        Commands::Scan {
+            platform,
+            all,
+            force,
+        } => {
+            info!(
+                "Starting scan: platform={:?}, all={}, force={}",
+                platform, all, force
+            );
             run_scan(platform, all, force).await?;
         }
-        Commands::List { platform, status, limit, offset } => {
-            info!("Listing bounties: platform={:?}, status={:?}", platform, status);
+        Commands::List {
+            platform,
+            status,
+            limit,
+            offset,
+        } => {
+            info!(
+                "Listing bounties: platform={:?}, status={:?}",
+                platform, status
+            );
             run_list(platform, status, limit, offset).await?;
         }
         Commands::Serve { host, port, server } => {
@@ -145,7 +157,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             start_server(host, port, server).await?;
         }
         Commands::Notify { channel, test } => {
-            info!("Configuring notifications: channel={}, test={}", channel, test);
+            info!(
+                "Configuring notifications: channel={}, test={}",
+                channel, test
+            );
             configure_notify(channel, test).await?;
         }
         Commands::Sync { platform, all } => {
@@ -164,8 +179,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn get_database() -> Result<Database, Box<dyn std::error::Error>> {
-    let database_path = std::env::var("DATABASE_PATH")
-        .unwrap_or_else(|_| "data/bounties.db".to_string());
+    let database_path =
+        std::env::var("DATABASE_PATH").unwrap_or_else(|_| "data/bounties.db".to_string());
 
     // Ensure directory exists
     if let Some(parent) = std::path::Path::new(&database_path).parent() {
@@ -176,7 +191,11 @@ async fn get_database() -> Result<Database, Box<dyn std::error::Error>> {
     Ok(db)
 }
 
-async fn run_scan(platform: Option<String>, all: bool, force: bool) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_scan(
+    platform: Option<String>,
+    all: bool,
+    force: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
     let db = get_database().await?;
 
     let mut registry = AdapterRegistry::new();
@@ -194,7 +213,10 @@ async fn run_scan(platform: Option<String>, all: bool, force: bool) -> Result<()
     // Register all adapters
     registry.register(Box::new(GitHubAdapter::new(github_token, github_org)));
     registry.register(Box::new(GitcoinAdapter::new(gitcoin_key)));
-    registry.register(Box::new(HackerOneAdapter::new(hackerone_key, hackerone_user)));
+    registry.register(Box::new(HackerOneAdapter::new(
+        hackerone_key,
+        hackerone_user,
+    )));
     registry.register(Box::new(BugcrowdAdapter::new(bugcrowd_key, bugcrowd_user)));
     registry.register(Box::new(LaborXAdapter::new(laborx_key)));
     registry.register(Box::new(DeWorkAdapter::new(dework_key)));
@@ -210,11 +232,11 @@ async fn run_scan(platform: Option<String>, all: bool, force: bool) -> Result<()
     for plat in platforms_to_scan {
         if let Some(adapter) = registry.get(&plat) {
             info!("Scanning platform: {:?}", plat);
-            
+
             match adapter.fetch_all().await {
                 Ok(bounties) => {
                     info!("Found {} bounties from {:?}", bounties.len(), plat);
-                    
+
                     for bounty in bounties {
                         if let Err(e) = db.upsert_bounty(&bounty).await {
                             error!("Failed to save bounty: {}", e);
@@ -242,7 +264,10 @@ async fn run_list(
 
     let bounties = db.list_bounties(limit, offset).await?;
 
-    println!("\n{:^6} | {:^30} | {:^10} | {:^15}", "ID", "Title", "Platform", "Status");
+    println!(
+        "\n{:^6} | {:^30} | {:^10} | {:^15}",
+        "ID", "Title", "Platform", "Status"
+    );
     println!("{:-<6}-+-{:-<30}-+-{:-<10}-+-{:-<15}", "", "", "", "");
 
     for bounty in bounties.iter().take(20) {
@@ -251,7 +276,8 @@ async fn run_list(
         } else {
             bounty.title.clone()
         };
-        println!("{:^6} | {:^30} | {:^10} | {:^15}", 
+        println!(
+            "{:^6} | {:^30} | {:^10} | {:^15}",
             &bounty.id.to_string()[..6],
             title,
             bounty.platform.as_str(),
@@ -265,7 +291,11 @@ async fn run_list(
     Ok(())
 }
 
-async fn start_server(_host: String, _port: u16, _server: bool) -> Result<(), Box<dyn std::error::Error>> {
+async fn start_server(
+    _host: String,
+    _port: u16,
+    _server: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
     println!("API server functionality coming soon!");
     println!("Use 'cargo build --release' and run the binary to access the API.");
     Ok(())
@@ -280,11 +310,32 @@ async fn run_sync(_platform: Option<String>, _all: bool) -> Result<(), Box<dyn s
     run_scan(None, true, true).await
 }
 
-async fn run_config(_get: Option<String>, _set: Option<String>, _list: bool) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_config(
+    _get: Option<String>,
+    _set: Option<String>,
+    _list: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
     println!("Configuration:");
-    println!("  GITHUB_TOKEN: {}", if std::env::var("GITHUB_TOKEN").is_ok() { "***" } else { "not set" });
-    println!("  GITCOIN_API_KEY: {}", if std::env::var("GITCOIN_API_KEY").is_ok() { "***" } else { "not set" });
-    println!("  DATABASE_URL: {}", std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://data/bounties.db".to_string()));
+    println!(
+        "  GITHUB_TOKEN: {}",
+        if std::env::var("GITHUB_TOKEN").is_ok() {
+            "***"
+        } else {
+            "not set"
+        }
+    );
+    println!(
+        "  GITCOIN_API_KEY: {}",
+        if std::env::var("GITCOIN_API_KEY").is_ok() {
+            "***"
+        } else {
+            "not set"
+        }
+    );
+    println!(
+        "  DATABASE_URL: {}",
+        std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://data/bounties.db".to_string())
+    );
     Ok(())
 }
 
@@ -295,19 +346,64 @@ async fn show_status() -> Result<(), Box<dyn std::error::Error>> {
 
     let total = db.count_bounties().await?;
     let bounties = db.list_bounties(1000, 0).await?;
-    let active = bounties.iter().filter(|b| b.status == obsidian_domain::BountyStatus::Active).count();
+    let active = bounties
+        .iter()
+        .filter(|b| b.status == obsidian_domain::BountyStatus::Active)
+        .count();
 
     println!("Database:");
     println!("  Total bounties: {}", total);
     println!("  Active bounties: {}", active);
 
     println!("\nPlatforms:");
-    println!("  GitHub: {}", if std::env::var("GITHUB_TOKEN").is_ok() { "✓ Configured" } else { "○ Not configured" });
-    println!("  Gitcoin: {}", if std::env::var("GITCOIN_API_KEY").is_ok() { "✓ Configured" } else { "○ Not configured" });
-    println!("  HackerOne: {}", if std::env::var("HACKERONE_API_KEY").is_ok() { "✓ Configured" } else { "○ Not configured" });
-    println!("  Bugcrowd: {}", if std::env::var("BUGCROWD_API_KEY").is_ok() { "✓ Configured" } else { "○ Not configured" });
-    println!("  LaborX: {}", if std::env::var("LABORX_API_KEY").is_ok() { "✓ Configured" } else { "○ Not configured" });
-    println!("  DeWork: {}", if std::env::var("DEWORK_API_KEY").is_ok() { "✓ Configured" } else { "○ Not configured" });
+    println!(
+        "  GitHub: {}",
+        if std::env::var("GITHUB_TOKEN").is_ok() {
+            "✓ Configured"
+        } else {
+            "○ Not configured"
+        }
+    );
+    println!(
+        "  Gitcoin: {}",
+        if std::env::var("GITCOIN_API_KEY").is_ok() {
+            "✓ Configured"
+        } else {
+            "○ Not configured"
+        }
+    );
+    println!(
+        "  HackerOne: {}",
+        if std::env::var("HACKERONE_API_KEY").is_ok() {
+            "✓ Configured"
+        } else {
+            "○ Not configured"
+        }
+    );
+    println!(
+        "  Bugcrowd: {}",
+        if std::env::var("BUGCROWD_API_KEY").is_ok() {
+            "✓ Configured"
+        } else {
+            "○ Not configured"
+        }
+    );
+    println!(
+        "  LaborX: {}",
+        if std::env::var("LABORX_API_KEY").is_ok() {
+            "✓ Configured"
+        } else {
+            "○ Not configured"
+        }
+    );
+    println!(
+        "  DeWork: {}",
+        if std::env::var("DEWORK_API_KEY").is_ok() {
+            "✓ Configured"
+        } else {
+            "○ Not configured"
+        }
+    );
 
     Ok(())
 }

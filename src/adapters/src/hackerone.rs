@@ -19,33 +19,44 @@ impl HackerOneAdapter {
             .build()
             .expect("Failed to create HTTP client");
 
-        Self { client, api_key, username }
+        Self {
+            client,
+            api_key,
+            username,
+        }
     }
 
     pub async fn fetch_programs(&self) -> AdapterResult<Vec<HackerOneProgram>> {
         let url = format!("{}/programs", HACKERONE_API_URL);
-        
+
         let mut request = self.client.get(&url);
 
         if let (Some(key), Some(user)) = (&self.api_key, &self.username) {
             request = request.basic_auth(user, Some(key));
         }
 
-        let response = request.send().await.map_err(|e| {
-            AdapterError::Network(e.to_string())
-        })?;
+        let response = request
+            .send()
+            .await
+            .map_err(|e| AdapterError::Network(e.to_string()))?;
 
         if response.status() == 401 {
-            return Err(AdapterError::Auth("Invalid HackerOne credentials".to_string()));
+            return Err(AdapterError::Auth(
+                "Invalid HackerOne credentials".to_string(),
+            ));
         }
 
         if !response.status().is_success() {
-            return Err(AdapterError::Api(format!("HackerOne API error: {}", response.status())));
+            return Err(AdapterError::Api(format!(
+                "HackerOne API error: {}",
+                response.status()
+            )));
         }
 
-        let programs: HackerOneResponse = response.json().await.map_err(|e| {
-            AdapterError::Parse(e.to_string())
-        })?;
+        let programs: HackerOneResponse = response
+            .json()
+            .await
+            .map_err(|e| AdapterError::Parse(e.to_string()))?;
 
         Ok(programs.data)
     }
@@ -60,7 +71,7 @@ impl HackerOneAdapter {
         );
 
         bounty.description = program.attributes.description.clone().unwrap_or_default();
-        
+
         if let Some(eligibility) = &program.attributes.eligibility {
             bounty.tags = eligibility.iter().map(|s| s.as_str().to_string()).collect();
         }
@@ -98,12 +109,16 @@ impl BountyAdapter for HackerOneAdapter {
     fn validate_config(&self) -> AdapterResult<()> {
         if let Some(key) = &self.api_key {
             if key.is_empty() {
-                return Err(AdapterError::Config("HackerOne API key is empty".to_string()));
+                return Err(AdapterError::Config(
+                    "HackerOne API key is empty".to_string(),
+                ));
             }
         }
         if let Some(user) = &self.username {
             if user.is_empty() {
-                return Err(AdapterError::Config("HackerOne username is empty".to_string()));
+                return Err(AdapterError::Config(
+                    "HackerOne username is empty".to_string(),
+                ));
             }
         }
         Ok(())
