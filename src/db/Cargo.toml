@@ -1,0 +1,19 @@
+[package]
+name = "obsidian-db"
+version = "0.1.0"
+edition = "2021"
+description = "Database layer for ObsidianBountyFinder"
+
+[dependencies]
+obsidian-domain = { path = "../domain" }
+rusqlite = { workspace = true }
+rust_decimal = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+async-trait = "0.1"
+serde_json = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

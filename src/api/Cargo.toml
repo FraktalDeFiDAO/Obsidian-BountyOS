@@ -1,0 +1,19 @@
+[package]
+name = "obsidian-api"
+version = "0.1.0"
+edition = "2021"
+description = "API server for ObsidianBountyFinder"
+
+[dependencies]
+obsidian-domain = { path = "../domain" }
+obsidian-db = { path = "../db" }
+obsidian-adapters = { path = "../adapters" }
+axum = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-graphql = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

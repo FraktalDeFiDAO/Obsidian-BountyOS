@@ -1,0 +1,21 @@
+[package]
+name = "obsidian-adapters"
+version = "0.1.0"
+edition = "2021"
+description = "Platform adapters for ObsidianBountyFinder"
+
+[dependencies]
+obsidian-domain = { path = "../domain" }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+async-trait = "0.1"
+url = { workspace = true }
+regex = { workspace = true }
+rust_decimal = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

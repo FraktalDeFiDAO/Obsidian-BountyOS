@@ -1,0 +1,16 @@
+[package]
+name = "obsidian-domain"
+version = "0.1.0"
+edition = "2021"
+description = "Domain models for ObsidianBountyFinder"
+
+[dependencies]
+chrono = { workspace = true }
+uuid = { workspace = true }
+rust_decimal = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

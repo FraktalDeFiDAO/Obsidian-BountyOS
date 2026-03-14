@@ -1,0 +1,26 @@
+[package]
+name = "obsidian-cli"
+version = "0.1.0"
+edition = "2021"
+description = "CLI for ObsidianBountyFinder"
+
+[[bin]]
+name = "obsidian-bounty-finder"
+path = "src/main.rs"
+
+[dependencies]
+obsidian-domain = { path = "../domain" }
+obsidian-db = { path = "../db" }
+obsidian-adapters = { path = "../adapters" }
+clap = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+reqwest = { workspace = true }
+ratatui = { workspace = true }
+crossterm = { workspace = true }
