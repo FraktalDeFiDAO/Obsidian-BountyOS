@@ -41,60 +41,133 @@ impl GitHubAdapter {
             return Ok(Vec::new());
         }
 
-        let mut url = format!("{}/issues", GITHUB_API_URL);
-
-        let params = vec![
-            ("state".to_string(), "open".to_string()),
-            ("per_page".to_string(), "100".to_string()),
-            ("page".to_string(), page.to_string()),
-            ("sort".to_string(), "created".to_string()),
-            ("direction".to_string(), "desc".to_string()),
+        let search_queries = [
+            "label:bounty is:issue state:open",
+            "label:reward is:issue state:open", 
+            "label:\"help wanted\" is:issue state:open",
+            "label:paid is:issue state:open",
         ];
 
-        if let Some(org) = &self.organization {
-            url = format!("{}/orgs/{}/issues", GITHUB_API_URL, org);
-        }
+        let mut all_issues: Vec<GitHubIssue> = Vec::new();
+        let mut seen_ids: std::collections::HashSet<String> = std::collections::HashSet::new();
 
-        let mut request = self.client.get(&url).query(&params);
+        for query in &search_queries {
+            let url = format!("{}/search/issues", GITHUB_API_URL);
+            let params = vec![
+                ("q".to_string(), query.to_string()),
+                ("per_page".to_string(), "100".to_string()),
+                ("page".to_string(), page.to_string()),
+                ("sort".to_string(), "created".to_string()),
+                ("order".to_string(), "desc".to_string()),
+            ];
 
-        if let Some((key, value)) = self.build_auth_header() {
-            request = request.header(&key, &value);
-        }
+            let mut request = self.client.get(&url).query(&params);
 
-        let response = request
-            .send()
-            .await
-            .map_err(|e| AdapterError::Network(e.to_string()))?;
+            if let Some((key, value)) = self.build_auth_header() {
+                request = request.header(&key, &value);
+            }
 
-        if response.status() == 401 {
-            return Err(AdapterError::Auth("Invalid GitHub token".to_string()));
-        }
+            let response = match request.send().await {
+                Ok(resp) => resp,
+                Err(e) => {
+                    tracing::warn!("GitHub search request failed: {}", e);
+                    continue;
+                }
+            };
 
-        if response.status() == 403 {
-            let remaining = response
-                .headers()
-                .get("X-RateLimit-Remaining")
-                .and_then(|v| v.to_str().ok())
-                .unwrap_or("0");
+            if response.status() == 401 {
+                return Err(AdapterError::Auth("Invalid GitHub token".to_string()));
+            }
 
-            if remaining == "0" {
-                return Err(AdapterError::RateLimited("Rate limit exceeded".to_string()));
+            if response.status() == 403 {
+                let remaining = response
+                    .headers()
+                    .get("X-RateLimit-Remaining")
+                    .and_then(|v| v.to_str().ok())
+                    .unwrap_or("0");
+
+                if remaining == "0" {
+                    return Err(AdapterError::RateLimited("Rate limit exceeded".to_string()));
+                }
+            }
+
+            if !response.status().is_success() {
+                tracing::warn!("GitHub search API error: {}", response.status());
+                continue;
+            }
+
+            #[derive(Deserialize)]
+            struct SearchResult {
+                items: Vec<GitHubIssue>,
+            }
+
+            if let Ok(result) = response.json::<SearchResult>().await {
+                for issue in result.items {
+                    if seen_ids.insert(issue.id.to_string()) {
+                        all_issues.push(issue);
+                    }
+                }
             }
         }
 
-        if !response.status().is_success() {
-            return Err(AdapterError::Api(format!(
-                "GitHub API error: {}",
-                response.status()
-            )));
+        Ok(all_issues)
+    }
+
+    pub async fn fetch_with_gh_cli(&self) -> AdapterResult<Vec<GitHubIssue>> {
+        let queries = [
+            "label:bounty is:issue state:open",
+            "label:reward is:issue state:open",
+        ];
+
+        let mut all_issues: Vec<GitHubIssue> = Vec::new();
+
+        for query in &queries {
+            let output = std::process::Command::new("gh")
+                .args(&["search", "issues", query, "--limit", "100", "--json",
+                        "id,number,title,body,url,labels,state,createdAt,user"])
+                .output();
+
+            match output {
+                Ok(out) if out.status.success() => {
+                    if let Ok(items) = serde_json::from_str::<Vec<serde_json::Value>>(&String::from_utf8_lossy(&out.stdout)) {
+                        for item in items {
+                            let labels: Vec<GitHubLabel> = item.get("labels")
+                                .and_then(|v| v.as_array())
+                                .map(|arr| arr.iter().filter_map(|l| {
+                                    Some(GitHubLabel {
+                                        name: l.get("name").and_then(|n| n.as_str()).unwrap_or("").to_string(),
+                                        color: l.get("color").and_then(|c| c.as_str()).unwrap_or("").to_string(),
+                                    })
+                                }).collect())
+                                .unwrap_or_default();
+                            
+                            let issue = GitHubIssue {
+                                id: item.get("id").and_then(|v| v.as_i64()).unwrap_or(0),
+                                number: item.get("number").and_then(|v| v.as_i64()).unwrap_or(0),
+                                title: item.get("title").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                                body: item.get("body").and_then(|v| v.as_str()).map(String::from),
+                                state: item.get("state").and_then(|v| v.as_str()).unwrap_or("open").to_string(),
+                                html_url: item.get("url").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                                labels,
+                                comments: 0,
+                                pull_request: None,
+                                created_at: item.get("createdAt").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                                updated_at: "".to_string(),
+                            };
+                            all_issues.push(issue);
+                        }
+                    }
+                }
+                Ok(out) => {
+                    tracing::warn!("gh CLI failed: {}", String::from_utf8_lossy(&out.stderr));
+                }
+                Err(e) => {
+                    tracing::warn!("gh CLI not available: {}", e);
+                }
+            }
         }
 
-        let issues: Vec<GitHubIssue> = response
-            .json()
-            .await
-            .map_err(|e| AdapterError::Parse(e.to_string()))?;
-
-        Ok(issues)
+        Ok(all_issues)
     }
 
     fn issue_to_bounty(&self, issue: &GitHubIssue) -> Option<Bounty> {
@@ -250,27 +323,47 @@ impl BountyAdapter for GitHubAdapter {
 
     async fn fetch_all(&self) -> AdapterResult<Vec<Bounty>> {
         let mut all_bounties = Vec::new();
-        let mut page = 1;
-        let max_pages = 10;
-
-        while page <= max_pages {
-            let issues = match self.fetch_issues(page).await {
-                Ok(i) => i,
-                Err(AdapterError::RateLimited(_)) => break,
-                Err(e) => return Err(e),
-            };
-
-            if issues.is_empty() {
-                break;
-            }
-
-            for issue in issues {
-                if let Some(bounty) = self.issue_to_bounty(&issue) {
-                    all_bounties.push(bounty);
+        
+        let issues_result = self.fetch_issues(1).await;
+        
+        let issues = match issues_result {
+            Ok(i) if !i.is_empty() => i,
+            Ok(_) => {
+                tracing::info!("API returned empty, trying gh CLI fallback...");
+                match self.fetch_with_gh_cli().await {
+                    Ok(gh_issues) => gh_issues,
+                    Err(e) => {
+                        tracing::warn!("gh CLI fallback failed: {:?}", e);
+                        Vec::new()
+                    }
                 }
             }
+            Err(AdapterError::RateLimited(_)) => {
+                tracing::warn!("Rate limited, trying gh CLI fallback...");
+                match self.fetch_with_gh_cli().await {
+                    Ok(gh_issues) => gh_issues,
+                    Err(e) => {
+                        tracing::warn!("gh CLI fallback failed: {:?}", e);
+                        Vec::new()
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::warn!("GitHub API error, trying gh CLI fallback: {:?}", e);
+                match self.fetch_with_gh_cli().await {
+                    Ok(gh_issues) => gh_issues,
+                    Err(e) => {
+                        tracing::warn!("gh CLI fallback failed: {:?}", e);
+                        Vec::new()
+                    }
+                }
+            }
+        };
 
-            page += 1;
+        for issue in issues {
+            if let Some(bounty) = self.issue_to_bounty(&issue) {
+                all_bounties.push(bounty);
+            }
         }
 
         Ok(all_bounties)
