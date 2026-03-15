@@ -37,14 +37,11 @@ async fn health_handler() -> impl IntoResponse {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    let database_path =
-        std::env::var("DATABASE_PATH").unwrap_or_else(|_| "data/bounties.db".to_string());
+    let database_url = std::env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "sqlite://data/bounties.db".to_string());
 
-    if let Some(parent) = std::path::Path::new(&database_path).parent() {
-        std::fs::create_dir_all(parent)?;
-    }
-
-    let db = Database::new(&database_path)?;
+    let db = Database::new(&database_url).await?;
+    db.init().await?;
     let schema = create_schema(db);
     let state = Arc::new(RwLock::new(schema));
 
