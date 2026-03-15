@@ -24,11 +24,10 @@ impl Database {
     pub async fn new(url: &str) -> DbResult<Self> {
         if url.starts_with("postgres://") || url.starts_with("postgresql://") {
             Ok(Database::Postgres(PostgresDatabase::new(url).await?))
-        } else if url.starts_with("sqlite://") {
+        } else if url.starts_with("sqlite://") || url.starts_with("sqlite:") {
             Ok(Database::Sqlite(SqliteDatabase::new(url).await?))
         } else {
-            let sqlite_url = format!("sqlite://{}", url);
-            Ok(Database::Sqlite(SqliteDatabase::new(&sqlite_url).await?))
+            Ok(Database::Sqlite(SqliteDatabase::new(url).await?))
         }
     }
 

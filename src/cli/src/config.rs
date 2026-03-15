@@ -19,8 +19,17 @@ pub struct DatabaseConfig {
 
 impl Default for DatabaseConfig {
     fn default() -> Self {
+        let db_path = std::env::current_dir()
+            .unwrap_or_default()
+            .join("data")
+            .join("bounties.db");
+
+        if let Some(parent) = db_path.parent() {
+            std::fs::create_dir_all(parent).ok();
+        }
+
         Self {
-            url: "sqlite://data/bounties.db".to_string(),
+            url: db_path.to_string_lossy().to_string(),
             pool_size: 5,
         }
     }

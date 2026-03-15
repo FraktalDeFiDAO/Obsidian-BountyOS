@@ -234,7 +234,9 @@ async fn run_scan(
     _take_screenshots: bool,
     config: &Config,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let db = get_database(&config.database.url).await?;
+    let database_url = std::env::var("DATABASE_URL")
+        .unwrap_or_else(|_| config.database.url.clone());
+    let db = get_database(&database_url).await?;
 
     let mut registry = AdapterRegistry::new();
 
