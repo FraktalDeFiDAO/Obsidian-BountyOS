@@ -27,6 +27,10 @@ impl HackerOneAdapter {
     }
 
     pub async fn fetch_programs(&self) -> AdapterResult<Vec<HackerOneProgram>> {
+        if self.api_key.is_none() || self.username.is_none() {
+            return Ok(Vec::new());
+        }
+
         let url = format!("{}/programs", HACKERONE_API_URL);
 
         let mut request = self.client.get(&url);

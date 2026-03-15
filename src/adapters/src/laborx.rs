@@ -24,6 +24,10 @@ impl LaborXAdapter {
     }
 
     pub async fn fetch_jobs(&self) -> AdapterResult<Vec<LaborXJob>> {
+        if self.api_key.is_none() {
+            return Ok(Vec::new());
+        }
+
         let url = format!("{}/jobs", LABORX_API_URL);
 
         let mut request = self.client.get(&url);

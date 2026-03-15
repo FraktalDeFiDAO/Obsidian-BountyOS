@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use obsidian_domain::{Bounty, BountyType, Platform};
 use reqwest::Client;
 use serde::Deserialize;
+use tracing;
 
 const GITCOIN_API_URL: &str = "https://gitcoin.co/grants/v1";
 
@@ -30,16 +31,17 @@ impl GitcoinAdapter {
             request = request.header("X-Api-Key", key);
         }
 
-        let response = request
-            .send()
-            .await
-            .map_err(|e| AdapterError::Network(e.to_string()))?;
+        let response = match request.send().await {
+            Ok(resp) => resp,
+            Err(e) => {
+                tracing::warn!("Gitcoin API request failed: {}", e);
+                return Ok(Vec::new());
+            }
+        };
 
         if !response.status().is_success() {
-            return Err(AdapterError::Api(format!(
-                "Gitcoin API error: {}",
-                response.status()
-            )));
+            tracing::warn!("Gitcoin API returned status: {}", response.status());
+            return Ok(Vec::new());
         }
 
         let grants: Vec<GitcoinGrant> = response

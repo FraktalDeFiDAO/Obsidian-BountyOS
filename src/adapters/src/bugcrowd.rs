@@ -27,6 +27,10 @@ impl BugcrowdAdapter {
     }
 
     pub async fn fetch_programs(&self) -> AdapterResult<Vec<BugcrowdProgram>> {
+        if self.api_key.is_none() || self.username.is_none() {
+            return Ok(Vec::new());
+        }
+
         let url = format!("{}/programs", BUGCROWD_API_URL);
 
         let mut request = self.client.get(&url);

@@ -37,6 +37,10 @@ impl GitHubAdapter {
     }
 
     pub async fn fetch_issues(&self, page: u32) -> AdapterResult<Vec<GitHubIssue>> {
+        if self.token.is_none() {
+            return Ok(Vec::new());
+        }
+
         let mut url = format!("{}/issues", GITHUB_API_URL);
 
         let params = vec![

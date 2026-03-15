@@ -185,7 +185,11 @@ async fn get_database() -> Result<Database, Box<dyn std::error::Error>> {
         std::fs::create_dir_all(parent)?;
     }
 
-    let db = Database::new(&database_path)?;
+    let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+        "sqlite://data/bounties.db".to_string()
+    });
+
+    let db = Database::new(&database_url).await?;
     Ok(db)
 }
 
