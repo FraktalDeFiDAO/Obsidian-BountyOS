@@ -45,13 +45,42 @@ impl DeWorkAdapter {
                     if let Some(tasks) = data.get("props")
                         .and_then(|p| p.get("apolloState"))
                         .and_then(|a| a.get("data"))
-                        .and_then(|d| d.get("ROOT_QUERY"))
-                        .and_then(|r| r.get("getTasks"))
-                        .and_then(|t| t.as_array())
                     {
-                        for task in tasks {
-                            if let Some(bounty) = self.extract_bounty_from_task(task) {
-                                bounties.push(bounty);
+                        if let Some(obj) = tasks.as_object() {
+                            for (key, value) in obj.iter() {
+                                if key.contains("Task") || key.contains("Bounty") {
+                                    if let Some(task_arr) = value.as_array() {
+                                        for task in task_arr {
+                                            if let Some(bounty) = self.extract_bounty_from_task(task) {
+                                                bounties.push(bounty);
+                                            }
+                                        }
+                                    } else if let Some(obj_val) = value.as_object() {
+                                        if let Some(bounty) = self.extract_bounty_from_task(&serde_json::json!([obj_val])) {
+                                            bounties.push(bounty);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    if bounties.is_empty() {
+                        if let Some(page_props) = data.get("props")
+                            .and_then(|p| p.get("pageProps"))
+                        {
+                            if let Some(obj) = page_props.as_object() {
+                                for (key, value) in obj.iter() {
+                                    if key.to_lowercase().contains("task") || key.to_lowercase().contains("bounty") {
+                                        if let Some(arr) = value.as_array() {
+                                            for task in arr {
+                                                if let Some(bounty) = self.extract_bounty_from_task(task) {
+                                                    bounties.push(bounty);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -60,19 +89,58 @@ impl DeWorkAdapter {
         }
 
         if bounties.is_empty() {
-            return Ok(Vec::new());
+            tracing::debug!("No bounties found in DeWork HTML");
         }
 
         Ok(bounties)
     }
 
     fn extract_bounty_from_task(&self, task: &serde_json::Value) -> Option<Bounty> {
-        let id = task.get("id")?.as_str()?;
-        let title = task.get("title").or_else(|| task.get("name"))?.as_str()?;
-        let url = task.get("url").or_else(|| task.get("link"))?.as_str()?;
-        let status = task.get("status").or_else(|| task.get("state"))?.as_str()?;
-        let reward = task.get("reward").or_else(|| task.get("price")).or_else(|| task.get("paymentAmount"));
-        let description = task.get("description").or_else(|| task.get("body"));
+        let task = if let Some(arr) = task.as_array() {
+            arr.first()?
+        } else {
+            task
+        };
+
+        let id = task.get("id")
+            .or_else(|| task.get("taskId"))
+            .or_else(|| task.get("uuid"))
+            .and_then(|v| v.as_str())?;
+            
+        let title = task.get("title")
+            .or_else(|| task.get("name"))
+            .or_else(|| task.get("heading"))
+            .and_then(|v| v.as_str())?;
+            
+        let url = task.get("url")
+            .or_else(|| task.get("link"))
+            .or_else(|| task.get("permalink"))
+            .or_else(|| task.get("externalUrl"))
+            .and_then(|v| v.as_str())
+            .map(|u| {
+                if u.starts_with("http") {
+                    u.to_string()
+                } else {
+                    format!("https://app.dework.xyz{}", u)
+                }
+            })
+            .unwrap_or_else(|| "https://app.dework.xyz/bounties".to_string());
+            
+        let status = task.get("status")
+            .or_else(|| task.get("state"))
+            .or_else(|| task.get("taskStatus"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("open");
+
+        let reward = task.get("reward")
+            .or_else(|| task.get("price"))
+            .or_else(|| task.get("paymentAmount"))
+            .or_else(|| task.get("payment"))
+            .or_else(|| task.get("value"));
+            
+        let description = task.get("description")
+            .or_else(|| task.get("body"))
+            .or_else(|| task.get("summary"));
 
         let mut bounty = Bounty::new(
             id.to_string(),
