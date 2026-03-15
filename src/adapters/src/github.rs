@@ -124,7 +124,7 @@ impl GitHubAdapter {
         for query in &queries {
             let output = std::process::Command::new("gh")
                 .args(&["search", "issues", query, "--limit", "100", "--json",
-                        "id,number,title,body,url,labels,state,createdAt,user"])
+                        "id,number,title,body,url,labels,state,createdAt"])
                 .output();
 
             match output {
